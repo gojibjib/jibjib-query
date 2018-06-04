@@ -1,0 +1,9 @@
+numpy
+scipy
+resampy
+tensorflow
+six
+sklearn
+pydub
+Flask
+Flask-RESTful
