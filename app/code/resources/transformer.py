@@ -17,7 +17,7 @@ class TransformMP3Form(Resource):
     """API resource to transform a .mp3 file into a .wav file"""
 
     def post(self):
-        upload_folder = current_app.config["UPLOAD_FOLDER"]
+        upload_folder = os.path.abspath(current_app.config["UPLOAD_FOLDER"])
         uploaded_file = request.files["file"]
 
         if not uploaded_file:
@@ -51,10 +51,10 @@ class TransformMP3Binary(Resource):
     # Test with:
     # curl -v -H 'Content-Type: application/octet-stream' -X POST --data-binary @test.mp3 https://localhost:8081/audio/transform/binary
     def post(self):
-        upload_folder = current_app.config["UPLOAD_FOLDER"]
+        upload_folder = os.path.abspath(current_app.config["UPLOAD_FOLDER"])
         file_name = str(uuid.uuid4())
         file_path = os.path.join(upload_folder, file_name)
-        file_hash = hashlib.sha256()
+
         # Accept binary file file
         try:
             with open(file_path, "wb") as wf:
@@ -67,17 +67,24 @@ class TransformMP3Binary(Resource):
                     wf.write(chunk)
         except:
             print_exc()
+            rm_file(wav_file)
             return response(500, "Internal error occured while trying to upload file", 0, None)
 
+        if not os.path.isfile(file_path) or os.path.getsize(file_path) <= 0:
+            print("File {} doesn't exist".format(file_path))
+            return response(400, "Uploaded file hasn't been saved", 0, None)
+        else:
+            print("File saved to {}, size: {}".format(file_path, os.path.getsize(file_path)))
+        
+
         # Transform file into wav
-        wav_file = os.path.join(upload_folder, file_name + ".wav")
         try:
             song = AudioSegment.from_mp3(file_path)
         except:
             print_exc()
             rm_file(file_path)
             return response(500, "Unable to load mp3 file", 0, None)
-
+        wav_file = os.path.join(upload_folder, file_name + ".wav")
         try:
             song.export(wav_file, format="wav")
         except:

@@ -7,3 +7,4 @@ sklearn
 pydub
 Flask
 Flask-RESTful
+gunicorn
