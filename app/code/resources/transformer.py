@@ -27,7 +27,7 @@ class TransformMP3Form(Resource):
             return response(400, "Invalid file", 0, None)
 
         # Convert audio
-        saved_file_path = os.path.join(upload_folder, secure_filename(uploaded_file.filename.replace(".mp3", ".wav")))
+        wav_file = os.path.join(upload_folder, secure_filename(uploaded_file.filename.replace(".mp3", ".wav")))
         try:
             song = AudioSegment.from_mp3(uploaded_file)
         except:
@@ -35,13 +35,15 @@ class TransformMP3Form(Resource):
             return response(500, "Unable to load file", 0, None)
 
         try:
-            song.export(saved_file_path, format="wav")
+            song.export(wav_file, format="wav")
         except:
             print_exc()
             return response(500, "Unable to transform file to wav", 0, None)
 
-        return response(202, "File saved to {}".format(saved_file_path), 0, None)
-
+        #return response(202, "File saved to {}".format(wav_file), 0, None)
+        # For testing, remove file again
+        rm_file(wav_file)
+        return response(202, "File OK", 0, None)
 
 class TransformMP3Binary(Resource):
     """API Resource to accept a binary file via stream and transform it into .wav"""
@@ -84,4 +86,8 @@ class TransformMP3Binary(Resource):
             return response(500, "Unable to transform file to wav", 0, None)
 
         rm_file(file_path)
-        return response(202, "File saved to {}".format(file_path), 0, None)
+        # return response(202, "File saved to {}".format(file_path), 0, None)
+        
+        # For testing, remove file again
+        rm_file(wav_file)
+        return response(202, "File OK", 0, None)
