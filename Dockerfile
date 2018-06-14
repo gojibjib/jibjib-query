@@ -14,4 +14,5 @@ COPY app/code/ code/
 
 WORKDIR /app/code
 
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:8081", "wsgi"]
+# CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:8081", "wsgi"]
+CMD ["python", "app.py"]

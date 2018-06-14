@@ -1,6 +1,13 @@
 py2env/
 *.wav
 *.mp3
+restore_model/
+serving/
+*.pickle
+checkpoint
+jibjib_model.ckpt.data-00000-of-00001
+jibjib_model.ckpt.index
+jibjib_model.ckpt.meta
 # Created by https://www.gitignore.io/api/macos,python,vagrant,terraform
 
 ### macOS ###
