@@ -1,0 +1,24 @@
+version: "3"
+services:
+  tf-serving:
+    image: obitech/tensorflow-serving:devel-cpu
+    container_name: tf-serving
+    ports:
+      - 9000:9000
+    volumes:
+      - "./app/input/model/protobuf:/serve"
+    command: tensorflow_model_server --port=9000 --model_name=jibjib_model --model_base_path=/serve/jibjib_model
+
+  jibjib-query:
+    image: obitech/jibjib-query
+    container_name: jibjib-query
+    ports:
+      - "8081:8081"
+    environment:
+      - SERVING_URL=tf-serving
+      - SERVING_PORT=9000
+    volumes:
+      - "./app/input:/app/input"
+    restart: always
+    depends_on:
+      - tf-serving

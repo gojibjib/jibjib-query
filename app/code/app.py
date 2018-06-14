@@ -4,6 +4,9 @@ from flask_restful import Resource, Api
 
 from resources.detect import DetectBinary, DetectServing
 
+SERVING_URL = os.environ.get("SERVING_URL", "localhost")
+SERVING_PORT = os.environ.get("SERVING_PORT", 9000)
+MODEL_NAME = os.environ.get("MODEL_NAME", "jibjib_model")
 UPLOAD_FOLDER = os.path.abspath('../uploads')
 INPUT_FOLDER = os.path.abspath('../input')
 MODEL_FOLDER = os.path.join(INPUT_FOLDER, 'model')
@@ -18,16 +21,14 @@ app.config['ALLOWED_EXTENSIONS'] = ALLOWED_EXTENSIONS
 app.config['MODEL_FOLDER'] = MODEL_FOLDER
 app.config['MODEL'] = MODEL
 app.config['PICKLE_FOLDER'] = PICKLE_FOLDER
+app.config['SERVING_URL'] = SERVING_URL
+app.config['SERVING_PORT'] = int(SERVING_PORT)
+app.config['MODEL_NAME'] = MODEL_NAME
 
 api = Api(app)
 
-# with app.app_context():
-#     g.tf_session = get_tf_session()
-
-# api.add_resource(TransformMP3Form, '/audio/transform/multipart')
-# api.add_resource(TransformMP3Binary, '/audio/transform/binary')
-api.add_resource(DetectBinary, '/detect/binary')
-api.add_resource(DetectServing, '/detect/serving')
+api.add_resource(DetectServing, '/detect/binary')
+# api.add_resource(DetectServing, '/detect/serving')
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port= 8081, debug=True)

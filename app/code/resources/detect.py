@@ -1,22 +1,24 @@
 import os, pickle, uuid, time
-import numpy as np
-import tensorflow as tf
-from util import vggish_input
-from util import vggish_params
-from util import vggish_slim
 from flask_restful import Resource
 from flask import current_app as app
 from flask import request
 from traceback import print_exc
 
-from grpc.beta import implementations
-
 # TensorFlow serving stuff to send messages
+from grpc.beta import implementations
 from tensorflow_serving.apis import predict_pb2
 from tensorflow_serving.apis import prediction_service_pb2
 from tensorflow.contrib.util import make_tensor_proto
 
-from util.system import rm_file, mp3_to_wav
+# VGGish stuff
+import numpy as np
+import tensorflow as tf
+from util import vggish_input
+from util import vggish_params
+from util import vggish_slim
+
+# API stuff
+from util.system import rm_file, mp3_to_wav, mp4_to_wav
 from util.response import response
 
 class DetectServing(Resource):
@@ -70,14 +72,14 @@ class DetectServing(Resource):
             print("File saved to {}, size: {}".format(mp3_path, os.path.getsize(mp3_path)))
 
         # Transform to WAV
-        wav_path = mp3_to_wav(mp3_path, file_name + ".wav")
+        # TODO: use query stringd to accept different audio formats
+        wav_path = mp4_to_wav(mp3_path, file_name + ".wav")
         if wav_path is None:
             rm_file(mp3_path)
             return response(500, "An error occured while trying to convert file to WAV", 0, None)
 
         try:
             my_input = vggish_input.wavfile_to_examples(wav_path)
-            print(my_input.shape)
         except:
             print_exc()
             rm_file(mp3_path)
@@ -86,14 +88,14 @@ class DetectServing(Resource):
 
         # Query TF Serving instance
         try:
-            host = "localhost"
-            port = 9000
+            host = app.config["SERVING_URL"]
+            port = app.config["SERVING_PORT"]
             channel = implementations.insecure_channel(host, port)
             stub = prediction_service_pb2.beta_create_PredictionService_stub(channel)
 
             start = time.time()
             req = predict_pb2.PredictRequest()
-            req.model_spec.name = 'jibjib_model'
+            req.model_spec.name = app.config["MODEL_NAME"]
             req.model_spec.signature_name = tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY
             req.inputs['inputs'].CopyFrom(make_tensor_proto(my_input, dtype=tf.float32))
             result = stub.Predict(req, 10.0)
@@ -109,38 +111,51 @@ class DetectServing(Resource):
             print_exc()
             rm_file(mp3_path)
             rm_file(wav_path)   
-            return response(500, "An error occured while trying to restore query Model", 0, None)
+            return response(500, "An error occured while trying to query Serving instance", 0, None)
 
         # Tuning
-        out_array = np.zeros(num_classes)
-        for i in range(0, len(pred), num_classes):
-            for j in range(num_classes):
-                out_array[j] += pred[i+j] * pred[i+j]
+        try:
+            out_array = np.zeros(num_classes)
+            for i in range(0, len(pred), num_classes):
+                for j in range(num_classes):
+                    out_array[j] += pred[i+j] * pred[i+j]
 
-        out_list = out_array.tolist()
-        sorted_array = sorted(out_list)
+            out_list = out_array.tolist()
+            sorted_array = sorted(out_list)
 
-        # 1st, 2nd, 3rd accumulated values
-        first, second, third = sorted_array[-1], sorted_array[-2], sorted_array[-3]
+            # 1st, 2nd, 3rd accumulated values
+            first, second, third = sorted_array[-1], sorted_array[-2], sorted_array[-3]
 
-        # 1st, 2nd, 3rd Train IDs
-        first_bird, second_bird, third_bird = out_list.index(first), out_list.index(second), out_list.index(third)
+            # 1st, 2nd, 3rd Train IDs
+            first_bird, second_bird, third_bird = out_list.index(first), out_list.index(second), out_list.index(third)
 
-        # Getting confidences
-        sum_acc = sum([first, second, third])
-        first_conf, second_conf, third_conf = first / sum_acc, second / sum_acc, third / sum_acc
+            # Getting confidences
+            sum_acc = sum([first, second, third])
+            first_conf, second_conf, third_conf = first / sum_acc, second / sum_acc, third / sum_acc
 
-        # print(first, second, third)
-        print(first_bird, second_bird, third_bird)
-        print(first_conf, second_conf, third_conf)
+            # print(first, second, third)
+            print(first_bird, second_bird, third_bird)
+            print(first_conf, second_conf, third_conf)
+        except:
+            print_exc()
+            rm_file(mp3_path)
+            rm_file(wav_path)
+            return response(500, "An error occured while trying to calculate accuracies", 0, None)
 
-        out = [
-            {"id": bird_id_map[train_id_list[first_bird]],
-            "accuracy": first_conf},
-            {"id": bird_id_map[train_id_list[second_bird]],
-            "accuracy": second_conf},
-            {"id": bird_id_map[train_id_list[third_bird]],
-            "accuracy": third_bird}]
+        out = []
+        try:
+            out = [
+                {"id": bird_id_map[train_id_list[first_bird]],
+                "accuracy": first_conf},
+                {"id": bird_id_map[train_id_list[second_bird]],
+                "accuracy": second_conf},
+                {"id": bird_id_map[train_id_list[third_bird]],
+                "accuracy": third_bird}]
+        except:
+            print_exc()
+            rm_file(mp3_path)
+            rm_file(wav_path)
+            return response(500, "An error occured while trying to construct response", 0, None)
 
         rm_file(mp3_path)
         rm_file(wav_path)
