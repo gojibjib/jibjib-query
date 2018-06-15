@@ -1,7 +1,7 @@
 py2env/
 *.wav
 *.mp3
-serve/
+serve/jibjib_model
 raw/
 *.pickle
 checkpoint
