@@ -4,7 +4,7 @@ This service utilizes [TensorFlow Serving](https://www.tensorflow.org/serving/) 
 
 ## Installation
 ### Remotely
-Use the [jibjib-api](https://github.com/gojibjib/jibjib-api) deployment [instructions](https://github.com/gojibjib/jibjib-query) to deploy the whole microservices stack to AWS.
+Use the [jibjib-api](https://github.com/gojibjib/jibjib-api) deployment [instructions](https://github.com/gojibjib/jibjib-api/tree/master/deploy) to deploy the whole microservices stack to AWS.
 
 ### Locally
 Clone the repo:
