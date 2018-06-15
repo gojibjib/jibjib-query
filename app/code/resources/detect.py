@@ -150,7 +150,8 @@ class DetectServing(Resource):
                 {"id": bird_id_map[train_id_list[second_bird]],
                 "accuracy": second_conf},
                 {"id": bird_id_map[train_id_list[third_bird]],
-                "accuracy": third_bird}]
+                "accuracy": third_conf}
+            ]
         except:
             print_exc()
             rm_file(mp3_path)
@@ -163,7 +164,7 @@ class DetectServing(Resource):
 
 
 class DetectBinary(Resource):
-    """API resource to accept binary stream of mp3 file and detect bird"""
+    """API resource to accept binary stream of an mp3 file and predict the bird"""
 
     def post(self):
         upload_folder = os.path.abspath(app.config["UPLOAD_FOLDER"])
