@@ -100,7 +100,7 @@ class DetectServing(Resource):
             req.inputs['inputs'].CopyFrom(make_tensor_proto(my_input, dtype=tf.float32))
             result = stub.Predict(req, 10.0)
             end = time.time()
-            print("Finished query after {}s".format(end - start))
+            # print("Finished query after {}s".format(end - start))
 
             pred = [x for x in result.outputs["outputs"].float_val]
             size_vector = int(result.outputs["outputs"].tensor_shape.dim[0].size)
@@ -134,8 +134,8 @@ class DetectServing(Resource):
             first_conf, second_conf, third_conf = first / sum_acc, second / sum_acc, third / sum_acc
 
             # print(first, second, third)
-            print(first_bird, second_bird, third_bird)
-            print(first_conf, second_conf, third_conf)
+            # print(first_bird, second_bird, third_bird)
+            # print(first_conf, second_conf, third_conf)
         except:
             print_exc()
             rm_file(mp3_path)
@@ -213,7 +213,7 @@ class DetectBinary(Resource):
             print("File {} doesn't exist".format(mp3_path))
             return response(500, "Uploaded file could not been saved", 0, None)
         else:
-            print("File saved to {}, size: {}".format(mp3_path, os.path.getsize(mp3_path)))
+            # print("File saved to {}, size: {}".format(mp3_path, os.path.getsize(mp3_path)))
 
         # Transform to WAV
         wav_path = mp4_to_wav(mp3_path, file_name + ".wav")
