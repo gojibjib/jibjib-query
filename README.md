@@ -1,6 +1,8 @@
 # [jibjib-query](https://github.com/gojibjib/jibjib-query)
 
-This service utilizes [TensorFlow Serving](https://www.tensorflow.org/serving/) to load a [protobuffer-serialized](https://developers.google.com/protocol-buffers/) TensorFlow [model](https://github.com/gojibjib/jibjib-model) and make it accessible through a custom, [Flask-based](http://flask.pocoo.org/) REST API.
+This service utilizes [TensorFlow Serving](https://www.tensorflow.org/serving/) to load a [protobuffer-serialized](https://developers.google.com/protocol-buffers/) TensorFlow [model](https://github.com/gojibjib/jibjib-model) and make it accessible through a custom, [Flask-based](http://flask.pocoo.org/) REST API. 
+
+>TensorFlow Serving is an open-source software library for serving machine learning models. It deals with the inference aspect of machine learning, taking models after training and managing their lifetimes, providing clients with versioned access via a high-performance, reference-counted lookup table.
 
 ## Installation
 ### Remotely

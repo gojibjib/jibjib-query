@@ -69,7 +69,8 @@ class DetectServing(Resource):
             print("File {} doesn't exist".format(mp3_path))
             return response(500, "Uploaded file could not been saved", 0, None)
         else:
-            print("File saved to {}, size: {}".format(mp3_path, os.path.getsize(mp3_path)))
+            # print("File saved to {}, size: {}".format(mp3_path, os.path.getsize(mp3_path)))
+            pass
 
         # Transform to WAV
         # TODO: use query stringd to accept different audio formats
@@ -220,6 +221,7 @@ class DetectBinary(Resource):
             return response(500, "Uploaded file could not been saved", 0, None)
         else:
             # print("File saved to {}, size: {}".format(mp3_path, os.path.getsize(mp3_path)))
+            pass
 
         # Transform to WAV
         wav_path = mp4_to_wav(mp3_path, file_name + ".wav")
