@@ -152,7 +152,13 @@ class DetectServing(Resource):
                 {"id": bird_id_map[train_id_list[third_bird]],
                 "accuracy": third_conf}
             ]
-        except:
+        except KeyError:
+            print_exc()
+            rm_file(mp3_path)
+            rm_file(wav_path)
+            return response(400, "No clear bird could be identified", 0, None)
+
+        except Exception:
             print_exc()
             rm_file(mp3_path)
             rm_file(wav_path)
