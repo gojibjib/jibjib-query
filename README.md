@@ -19,16 +19,13 @@ cd jibjib-query
 Get the model:
 
 ```
-wget https://s3-eu-west-1.amazonaws.com/jibjib/model/jibjib_model_serving.tgz
-tar xzf jibjib_model_serving.tgz serve/
+curl https://s3-eu-west-1.amazonaws.com/jibjib/model/jibjib_model_serving.tgz | tar -xvz -C app/input/model/
 ```
 
 Get the mappings:
 
 ```
-wget https://s3-eu-west-1.amazonaws.com/jibjib/pickle/mapping_pickles.tgz -O app/input/pickle
-tar xzf app/input/pickle/mapping_pickes.tgz
-rm app/input/pickle/*.tgz
+curl https://s3-eu-west-1.amazonaws.com/jibjib/pickle/mapping_pickles.tgz | tar -xvz -C app/input/pickle
 ```
 
 Make sure to have [Docker](https://docs.docker.com/install/#server) and [Docker Compose](https://docs.docker.com/compose/install/) installed, then start the stack:
