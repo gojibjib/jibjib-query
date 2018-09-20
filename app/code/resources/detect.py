@@ -99,7 +99,7 @@ class DetectServing(Resource):
             req.model_spec.name = app.config["MODEL_NAME"]
             req.model_spec.signature_name = tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY
             req.inputs['inputs'].CopyFrom(make_tensor_proto(my_input, dtype=tf.float32))
-            result = stub.Predict(req, 30.0)
+            result = stub.Predict(req, 60.0)
             end = time.time()
             # print("Finished query after {}s".format(end - start))
 
