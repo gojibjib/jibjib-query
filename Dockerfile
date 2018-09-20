@@ -14,5 +14,5 @@ COPY app/code/ code/
 
 WORKDIR /app/code
 
-CMD ["gunicorn", "--max-requests", "50", "-w", "5", "-b", "0.0.0.0:8081", "wsgi"]
+CMD ["gunicorn", "-t", "60", "--max-requests", "50", "-w", "5", "-b", "0.0.0.0:8081", "wsgi"]
 # CMD ["python", "app.py"]

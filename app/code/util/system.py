@@ -65,7 +65,7 @@ def mp4_to_wav(input_path, filename):
     """Transforms an MP4 file to WAV.
 
     Args:
-        input_path (str): Absolute path to MP3 file to be converted
+        input_path (str): Absolute path to MP4 file to be converted
         filename (str): Desired file name of wav file to be saved
 
     Returns:

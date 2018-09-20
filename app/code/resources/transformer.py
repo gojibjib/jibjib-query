@@ -67,7 +67,6 @@ class TransformMP3Binary(Resource):
                     wf.write(chunk)
         except:
             print_exc()
-            rm_file(wav_file)
             return response(500, "Internal error occured while trying to upload file", 0, None)
 
         if not os.path.isfile(file_path) or os.path.getsize(file_path) <= 0:

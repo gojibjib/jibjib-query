@@ -26,8 +26,8 @@ class DetectServing(Resource):
         upload_folder = os.path.abspath(app.config["UPLOAD_FOLDER"])
         file_name = str(uuid.uuid4())
         mp3_path = os.path.join(upload_folder, file_name)
-        train_id_list_path = os.path.join(app.config["PICKLE_FOLDER"], "train_id_list.pickle")
-        bird_id_map_path = os.path.join(app.config["PICKLE_FOLDER"], "bird_id_map.pickle")
+        train_id_list_path = os.path.join(app.config["PICKLE_FOLDER"], app.config["TRAIN_ID_LIST"])
+        bird_id_map_path = os.path.join(app.config["PICKLE_FOLDER"], app.config["BIRD_ID_MAP"])
 
         # Load pickle files
         pickle.HIGHEST_PROTOCOL
@@ -99,7 +99,7 @@ class DetectServing(Resource):
             req.model_spec.name = app.config["MODEL_NAME"]
             req.model_spec.signature_name = tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY
             req.inputs['inputs'].CopyFrom(make_tensor_proto(my_input, dtype=tf.float32))
-            result = stub.Predict(req, 10.0)
+            result = stub.Predict(req, 30.0)
             end = time.time()
             # print("Finished query after {}s".format(end - start))
 
@@ -146,11 +146,11 @@ class DetectServing(Resource):
         out = []
         try:
             out = [
-                {"id": bird_id_map[train_id_list[first_bird]],
+                {"id": bird_id_map[train_id_list[int(first_bird)]],
                 "accuracy": first_conf},
-                {"id": bird_id_map[train_id_list[second_bird]],
+                {"id": bird_id_map[train_id_list[int(second_bird)]],
                 "accuracy": second_conf},
-                {"id": bird_id_map[train_id_list[third_bird]],
+                {"id": bird_id_map[train_id_list[int(third_bird)]],
                 "accuracy": third_conf}
             ]
         except KeyError:
@@ -168,171 +168,3 @@ class DetectServing(Resource):
         rm_file(mp3_path)
         rm_file(wav_path)
         return response(200, "Detection successful", len(out), out)
-
-
-class DetectBinary(Resource):
-    """API resource to accept binary stream of an mp3 file and predict the bird"""
-
-    def post(self):
-        upload_folder = os.path.abspath(app.config["UPLOAD_FOLDER"])
-        file_name = str(uuid.uuid4())
-        mp3_path = os.path.join(upload_folder, file_name)
-        train_id_list_path = os.path.join(app.config["PICKLE_FOLDER"], "train_id_list.pickle")
-        bird_id_map_path = os.path.join(app.config["PICKLE_FOLDER"], "bird_id_map.pickle")
-
-        # Load pickle files
-        pickle.HIGHEST_PROTOCOL
-        train_id_list = None
-        try:
-            with open(train_id_list_path, "rb") as rf:
-                train_id_list = pickle.load(rf)
-        except:
-            print_exc()
-            return response(500, "An internal error occured", 0, None)
-        # print(train_id_list)
-
-        bird_id_map = None
-        try:
-            with open(bird_id_map_path, "rb") as rf:
-                bird_id_map = pickle.load(rf)
-        except:
-            print_exc()
-            return response(500, "An internal error occured", 0, None)
-        # print(bird_id_map)
-
-        # Accept binary file file
-        try:
-            with open(mp3_path, "wb") as wf:
-                chunk_size = 4096
-                while True:
-                    chunk = request.stream.read(chunk_size)
-                    if len(chunk) == 0:
-                        break
-
-                    wf.write(chunk)
-        except:
-            print_exc()
-            rm_file(mp3_path)
-            return response(500, "An error occured while trying to upload file", 0, None)
-        
-        # Check if it has been saved
-        if not os.path.isfile(mp3_path) or os.path.getsize(mp3_path) <= 0:
-            print("File {} doesn't exist".format(mp3_path))
-            return response(500, "Uploaded file could not been saved", 0, None)
-        else:
-            # print("File saved to {}, size: {}".format(mp3_path, os.path.getsize(mp3_path)))
-            pass
-
-        # Transform to WAV
-        wav_path = mp4_to_wav(mp3_path, file_name + ".wav")
-        if wav_path is None:
-            rm_file(mp3_path)
-            rm_file(wav_path)
-            return response(500, "An error occured while trying to convert file to WAV", 0, None)
-
-        # TensorFlow magic
-        loaded_graph = tf.Graph()
-        with tf.Session(graph=loaded_graph) as sess:
-            # Restore model
-            try:
-                saver = tf.train.import_meta_graph(app.config['MODEL'] + ".meta")
-                saver.restore(sess, app.config['MODEL'])
-            except:
-                print_exc()
-                rm_file(mp3_path)
-                rm_file(wav_path)   
-                return response(500, "An error occured while trying to restore TensorFlow model", 0, None)
-
-            # Load Tensors
-            try:
-                logits = loaded_graph.get_tensor_by_name("mymodel/prediction:0")
-                features_tensor= loaded_graph.get_tensor_by_name("vggish/input_features:0")
-            except:
-                print_exc()
-                rm_file(mp3_path)
-                rm_file(wav_path)   
-                return response(500, "An error occured while trying to restore Tensors", 0, None)
-
-            # Extract spectogram
-            try:
-                my_input = vggish_input.wavfile_to_examples(wav_path)
-            except:
-                print_exc()
-                rm_file(mp3_path)
-                rm_file(wav_path)   
-                return response(400, "Unable to extract spectogram, file seems to be corrupted", 0, None)
-            # Query model
-            try:
-                prediction=tf.argmax(logits,1)
-                pred = sess.run([prediction],feed_dict={features_tensor:my_input})
-                # print(pred[0])
-            except:
-                print_exc()
-                rm_file(mp3_path)
-                rm_file(wav_path)   
-                return response(500, "An error occured while trying to restore query Model", 0, None)
-
-            my_result = np.array(pred).tolist()
-            lst = set(my_result[0])
-
-            # result_list holds number of occurences per bird
-            result_list =[]
-            for element in lst:
-                counter =(my_result[0]).count(element)
-                result_list.append((element,float(counter)/len(my_input)))
-            
-            # First indices have most occurences 
-            result_list_sorted = sorted(result_list, key=lambda tup: tup[1],reverse=True)
-
-            # Only display top three occurences
-            my_vector =[]
-            if len(result_list_sorted)>3:
-                for i in result_list_sorted [0:3]:
-                    my_vector.append(i[1])
-
-            if len(result_list_sorted)<3 and len(result_list_sorted)>1:
-                for i in result_list_sorted [0:2]:
-                    my_vector.append(i[1])
-            
-            if len(result_list_sorted)<2:
-                for i in result_list_sorted [0:1]:
-                    my_vector.append(i[1])
-            
-            # Normalize detection accuracy
-            norm1 = my_vector / np.linalg.norm(my_vector)
-
-            acc_sum = 0.
-            for element in norm1:
-                acc_sum += element
-            
-            # my_list holds list of tuples where idx[0] eq train_id, idx[1] eq normalized acc 
-            my_list =[]
-            for index,element in enumerate(norm1):
-                my_list.append((result_list_sorted[index][0], element/acc_sum ))
-            
-            # Construct repsonse
-            out = []
-            for item in my_list:
-                tmp = {}
-
-                # Throwing out Noise_noise
-                if train_id_list[item[0]] is None:
-                    continue
-
-                #tmp['bird'] = train_id_list[item[0]]
-                #tmp['train_id'] = item[0]
-                tmp['id'] = bird_id_map[train_id_list[item[0]]]
-                tmp['accuracy'] = item[1]
-                out.append(tmp)
-            # birds = [train_id_list[x] for x in pred[0] if x is not None]
-            # # print(birds)
-            # db_ids = {}
-            # for b in birds:
-            #     if b is not "Noise_noise":
-            #         db_ids[b] = bird_id_map[b]
-            # # print("Birds: {}".format(birds))
-            # # print("DB IDs: {}".format(db_ids))
-
-            rm_file(mp3_path)
-            rm_file(wav_path)
-            return response(200, "Detection successful", len(out), out)
